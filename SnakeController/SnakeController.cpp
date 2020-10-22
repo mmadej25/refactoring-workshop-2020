@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <sstream>
 
-#include "EventT.hpp"
+
 #include "IPort.hpp"
 
 
@@ -106,11 +106,8 @@ void Controller::displayNewHead(Segment& newHead)
                 m_segments.end());
 }
 
-void Controller::receive(std::unique_ptr<Event> event)
+void Controller::handleTimeEvent()
 {
-    try {
-        auto const& timerEvent = *dynamic_cast<EventT<TimeoutInd> const&>(*event);
-
         Segment const& currentHead = m_segments.front();
 
         Segment newHead;
@@ -134,6 +131,14 @@ void Controller::receive(std::unique_ptr<Event> event)
         if (not lost){
             displayNewHead(newHead);
         }
+}
+
+void Controller::receive(std::unique_ptr<Event> event)
+{
+    try {
+        auto const& timerEvent = *dynamic_cast<EventT<TimeoutInd> const&>(*event);
+        handleTimeEvent();
+        
     } catch (std::bad_cast&) {
         try {
             auto direction = dynamic_cast<EventT<DirectionInd> const&>(*event)->direction;

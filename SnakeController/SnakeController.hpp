@@ -5,6 +5,7 @@
 
 #include "IEventHandler.hpp"
 #include "SnakeInterface.hpp"
+#include "EventT.hpp"
 
 class Event;
 class IPort;
@@ -50,6 +51,7 @@ private:
     std::list<Segment> m_segments;
     void displayNewHead(Segment& newHead);
     void updateScorePort(Segment& newHead, bool &lost);
+    void handleTimeEvent();
 };
 
 } // namespace Snake
