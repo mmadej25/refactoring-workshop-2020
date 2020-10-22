@@ -52,6 +52,7 @@ private:
     void displayNewHead(Segment& newHead);
     void updateScorePort(Segment& newHead, bool &lost);
     void handleTimeEvent();
+    void handleReciveFood(std::unique_ptr<Event> &event);
 };
 
 } // namespace Snake

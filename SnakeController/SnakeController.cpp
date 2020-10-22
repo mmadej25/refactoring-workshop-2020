@@ -133,25 +133,11 @@ void Controller::handleTimeEvent()
         }
 }
 
-void Controller::receive(std::unique_ptr<Event> event)
+void Controller::handleReciveFood(std::unique_ptr<Event> &event)
 {
-    try {
-        auto const& timerEvent = *dynamic_cast<EventT<TimeoutInd> const&>(*event);
-        handleTimeEvent();
-        
-    } catch (std::bad_cast&) {
-        try {
-            auto direction = dynamic_cast<EventT<DirectionInd> const&>(*event)->direction;
-
-            if ((m_currentDirection & 0b01) != (direction & 0b01)) {
-                m_currentDirection = direction;
-            }
-        } catch (std::bad_cast&) {
-            try {
-                auto receivedFood = *dynamic_cast<EventT<FoodInd> const&>(*event);
-
-                bool requestedFoodCollidedWithSnake = false;
-                for (auto const& segment : m_segments) {
+    auto receivedFood = *dynamic_cast<EventT<FoodInd> const&>(*event);
+    bool requestedFoodCollidedWithSnake = false;
+            for (auto const& segment : m_segments) {
                     if (segment.x == receivedFood.x and segment.y == receivedFood.y) {
                         requestedFoodCollidedWithSnake = true;
                         break;
@@ -175,7 +161,24 @@ void Controller::receive(std::unique_ptr<Event> event)
                 }
 
                 m_foodPosition = std::make_pair(receivedFood.x, receivedFood.y);
+}
 
+void Controller::receive(std::unique_ptr<Event> event)
+{
+    try {
+        auto const& timerEvent = *dynamic_cast<EventT<TimeoutInd> const&>(*event);
+        handleTimeEvent();
+        
+    } catch (std::bad_cast&) {
+        try {
+            auto direction = dynamic_cast<EventT<DirectionInd> const&>(*event)->direction;
+
+            if ((m_currentDirection & 0b01) != (direction & 0b01)) {
+                m_currentDirection = direction;
+            }
+        } catch (std::bad_cast&) {
+            try {
+                handleReciveFood(event);
             } catch (std::bad_cast&) {
                 try {
                     auto requestedFood = *dynamic_cast<EventT<FoodResp> const&>(*event);
