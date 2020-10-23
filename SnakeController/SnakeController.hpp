@@ -54,6 +54,7 @@ private:
     void handleTimeEvent(std::unique_ptr<Event> &event);
     void handleReciveFood(std::unique_ptr<Event> &event);
     void handleRequestedFood(std::unique_ptr<Event> &event);
+    void handleDirectionChange(std::unique_ptr<Event> &event);
 };
 
 } // namespace Snake

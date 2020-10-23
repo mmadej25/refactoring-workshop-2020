@@ -237,13 +237,7 @@ Controller::receive (std::unique_ptr<Event> event)
     {
       try
         {
-          auto direction
-              = dynamic_cast<EventT<DirectionInd> const &> (*event)->direction;
-
-          if ((m_currentDirection & 0b01) != (direction & 0b01))
-            {
-              m_currentDirection = direction;
-            }
+          handleDirectionChange(event);
         }
       catch (std::bad_cast &)
         {
@@ -264,6 +258,17 @@ Controller::receive (std::unique_ptr<Event> event)
             }
         }
     }
+}
+
+void Controller::handleDirectionChange(std::unique_ptr<Event> &event)
+{
+   auto direction
+              = dynamic_cast<EventT<DirectionInd> const &> (*event)->direction;
+
+          if ((m_currentDirection & 0b01) != (direction & 0b01))
+            {
+              m_currentDirection = direction;
+            } 
 }
 
 } // namespace Snake
