@@ -70,6 +70,56 @@ Controller::Controller (IPort &p_displayPort, IPort &p_foodPort,
 }
 
 void
+Controller::receive (std::unique_ptr<Event> event)
+{
+  try
+    {
+      handleTimeEvent (event);
+    }
+  catch (std::bad_cast &)
+    {
+      handleDirectionChange (event);
+    }
+}
+
+void
+Controller::handleTimeEvent (std::unique_ptr<Event> &event)
+{
+  auto const &timerEvent = *dynamic_cast<EventT<TimeoutInd> const &> (*event);
+  Segment const &currentHead = m_segments.front ();
+
+  Segment newHead;
+  newHead.x = currentHead.x + ((m_currentDirection & 0b01)
+                                   ? (m_currentDirection & 0b10) ? 1 : -1
+                                   : 0);
+  newHead.y = currentHead.y + (not(m_currentDirection & 0b01)
+                                   ? (m_currentDirection & 0b10) ? 1 : -1
+                                   : 0);
+  newHead.ttl = currentHead.ttl;
+
+  bool lost = false;
+
+  for (auto segment : m_segments)
+    {
+      if (segment.x == newHead.x and segment.y == newHead.y)
+        {
+          m_scorePort.send (std::make_unique<EventT<LooseInd> > ());
+          lost = true;
+          break;
+        }
+    }
+
+  if (not lost)
+    {
+      updateScorePort (newHead, lost);
+    }
+  if (not lost)
+    {
+      displayNewHead (newHead);
+    }
+}
+
+void
 Controller::updateScorePort (Segment &newHead, bool &lost)
 {
   if (std::make_pair (newHead.x, newHead.y) == m_foodPosition)
@@ -120,78 +170,75 @@ Controller::displayNewHead (Segment &newHead)
 }
 
 void
-Controller::handleTimeEvent (std::unique_ptr<Event> &event)
+Controller::handleDirectionChange (std::unique_ptr<Event> &event)
 {
-    auto const &timerEvent = *dynamic_cast<EventT<TimeoutInd> const &> (*event);
-  Segment const &currentHead = m_segments.front ();
 
-  Segment newHead;
-  newHead.x = currentHead.x + ((m_currentDirection & 0b01)
-                                   ? (m_currentDirection & 0b10) ? 1 : -1
-                                   : 0);
-  newHead.y = currentHead.y + (not(m_currentDirection & 0b01)
-                                   ? (m_currentDirection & 0b10) ? 1 : -1
-                                   : 0);
-  newHead.ttl = currentHead.ttl;
-
-  bool lost = false;
-
-  for (auto segment : m_segments)
+  try
     {
-      if (segment.x == newHead.x and segment.y == newHead.y)
+      auto direction
+          = dynamic_cast<EventT<DirectionInd> const &> (*event)->direction;
+
+      if ((m_currentDirection & 0b01) != (direction & 0b01))
         {
-          m_scorePort.send (std::make_unique<EventT<LooseInd> > ());
-          lost = true;
-          break;
+          m_currentDirection = direction;
         }
     }
-
-  if (not lost)
+  catch (std::bad_cast &)
     {
-      updateScorePort (newHead, lost);
-    }
-  if (not lost)
-    {
-      displayNewHead (newHead);
+      handleReciveFood (event);
     }
 }
 
 void
 Controller::handleReciveFood (std::unique_ptr<Event> &event)
 {
-  auto receivedFood = *dynamic_cast<EventT<FoodInd> const &> (*event);
-  bool requestedFoodCollidedWithSnake = false;
-  for (auto const &segment : m_segments)
+  try
     {
-      if (segment.x == receivedFood.x and segment.y == receivedFood.y)
+      auto receivedFood = *dynamic_cast<EventT<FoodInd> const &> (*event);
+      bool requestedFoodCollidedWithSnake = false;
+      for (auto const &segment : m_segments)
         {
-          requestedFoodCollidedWithSnake = true;
-          break;
+          if (segment.x == receivedFood.x and segment.y == receivedFood.y)
+            {
+              requestedFoodCollidedWithSnake = true;
+              break;
+            }
+        }
+
+      if (requestedFoodCollidedWithSnake)
+        {
+          m_foodPort.send (std::make_unique<EventT<FoodReq> > ());
+        }
+      else
+        {
+          DisplayInd clearOldFood;
+          clearOldFood.x = m_foodPosition.first;
+          clearOldFood.y = m_foodPosition.second;
+          clearOldFood.value = Cell_FREE;
+          m_displayPort.send (
+              std::make_unique<EventT<DisplayInd> > (clearOldFood));
+
+          DisplayInd placeNewFood;
+          placeNewFood.x = receivedFood.x;
+          placeNewFood.y = receivedFood.y;
+          placeNewFood.value = Cell_FOOD;
+          m_displayPort.send (
+              std::make_unique<EventT<DisplayInd> > (placeNewFood));
+        }
+
+      m_foodPosition = std::make_pair (receivedFood.x, receivedFood.y);
+    }
+  catch (std::bad_cast &)
+    {
+      try
+        {
+          handleRequestedFood (event);
+        }
+      catch (std::bad_cast &)
+        {
+          throw UnexpectedEventException ();
         }
     }
-
-  if (requestedFoodCollidedWithSnake)
-    {
-      m_foodPort.send (std::make_unique<EventT<FoodReq> > ());
-    }
-  else
-    {
-      DisplayInd clearOldFood;
-      clearOldFood.x = m_foodPosition.first;
-      clearOldFood.y = m_foodPosition.second;
-      clearOldFood.value = Cell_FREE;
-      m_displayPort.send (
-          std::make_unique<EventT<DisplayInd> > (clearOldFood));
-
-      DisplayInd placeNewFood;
-      placeNewFood.x = receivedFood.x;
-      placeNewFood.y = receivedFood.y;
-      placeNewFood.value = Cell_FOOD;
-      m_displayPort.send (
-          std::make_unique<EventT<DisplayInd> > (placeNewFood));
-    }
-
-  m_foodPosition = std::make_pair (receivedFood.x, receivedFood.y);
 }
 
 void
@@ -224,55 +271,6 @@ Controller::handleRequestedFood (std::unique_ptr<Event> &event)
     }
 
   m_foodPosition = std::make_pair (requestedFood.x, requestedFood.y);
-}
-
-void
-Controller::receive (std::unique_ptr<Event> event)
-{
-  try
-    {
-      handleTimeEvent (event);
-      /*handleDirectionChange(event);
-      handleReciveFood (event);
-      handleRequestedFood (event);*/
-    }
-  catch (std::bad_cast &)
-    {
-        handleDirectionChange(event);
-    }
-}
-
-void Controller::handleDirectionChange(std::unique_ptr<Event> &event)
-{
-    
-    try
-        {
-          auto direction
-              = dynamic_cast<EventT<DirectionInd> const &> (*event)->direction;
-
-          if ((m_currentDirection & 0b01) != (direction & 0b01))
-            {
-              m_currentDirection = direction;
-            } 
-        }
-      catch (std::bad_cast &)
-        {
-          try
-            {
-              handleReciveFood (event);
-            }
-          catch (std::bad_cast &)
-            {
-              try
-                {
-                  handleRequestedFood (event);
-                }
-              catch (std::bad_cast &)
-                {
-                  throw UnexpectedEventException ();
-                }
-            }
-        }
 }
 
 } // namespace Snake
