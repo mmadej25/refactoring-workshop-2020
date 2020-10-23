@@ -51,7 +51,7 @@ private:
     std::list<Segment> m_segments;
     void displayNewHead(Segment& newHead);
     void updateScorePort(Segment& newHead, bool &lost);
-    void handleTimeEvent();
+    void handleTimeEvent(std::unique_ptr<Event> &event);
     void handleReciveFood(std::unique_ptr<Event> &event);
     void handleRequestedFood(std::unique_ptr<Event> &event);
 };

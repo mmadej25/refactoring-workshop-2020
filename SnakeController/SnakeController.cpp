@@ -120,8 +120,9 @@ Controller::displayNewHead (Segment &newHead)
 }
 
 void
-Controller::handleTimeEvent ()
+Controller::handleTimeEvent (std::unique_ptr<Event> &event)
 {
+    auto const &timerEvent = *dynamic_cast<EventT<TimeoutInd> const &> (*event);
   Segment const &currentHead = m_segments.front ();
 
   Segment newHead;
@@ -230,9 +231,7 @@ Controller::receive (std::unique_ptr<Event> event)
 {
   try
     {
-      auto const &timerEvent
-          = *dynamic_cast<EventT<TimeoutInd> const &> (*event);
-      handleTimeEvent ();
+      handleTimeEvent (event);
     }
   catch (std::bad_cast &)
     {
