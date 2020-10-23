@@ -32,10 +32,20 @@ public:
     void receive(std::unique_ptr<Event> e) override;
 
 private:
+
     void handleTimePassed(const TimeoutInd&);
     void handleDirectionChange(const DirectionInd&);
     void handleFoodPositionChange(const FoodInd& receivedFood);
     void handleNewFood(const FoodResp& requestedFood);
+
+    IPort& m_displayPort;
+    IPort& m_foodPort;
+    IPort& m_scorePort;
+    
+
+    std::pair<int, int> m_mapDimension;
+    std::pair<int, int> m_foodPosition;
+
 
     struct Segment
     {
@@ -56,12 +66,6 @@ private:
     void cleanNotExistingSnakeSegments();
 
 
-    IPort& m_displayPort;
-    IPort& m_foodPort;
-    IPort& m_scorePort;
-
-    std::pair<int, int> m_mapDimension;
-    std::pair<int, int> m_foodPosition;
 
     Direction m_currentDirection;
     std::list<Segment> m_segments;
