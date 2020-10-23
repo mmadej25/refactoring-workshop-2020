@@ -232,9 +232,13 @@ Controller::receive (std::unique_ptr<Event> event)
   try
     {
       handleTimeEvent (event);
+      /*handleDirectionChange(event);
+      handleReciveFood (event);
+      handleRequestedFood (event);*/
     }
   catch (std::bad_cast &)
     {
+        //throw UnexpectedEventException ();
       try
         {
           handleDirectionChange(event);
