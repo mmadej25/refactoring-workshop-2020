@@ -33,6 +33,11 @@ enum Cell
     Cell_SNAKE
 };
 
+struct Coordinate{
+    int x;
+    int y;
+};
+
 struct DisplayInd
 {
     static constexpr std::uint32_t MESSAGE_ID = 0x30;
@@ -55,12 +60,12 @@ struct FoodReq
     static constexpr std::uint32_t MESSAGE_ID = 0x41;
 };
 
-struct FoodResp
+struct FoodResp : Coordinate
 {
     static constexpr std::uint32_t MESSAGE_ID = 0x42;
 
-    int x;
-    int y;
+    //int x;
+    //int y;
 };
 
 struct ScoreInd
