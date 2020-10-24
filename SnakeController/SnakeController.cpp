@@ -246,15 +246,7 @@ Controller::handleRequestedFood (std::unique_ptr<Event> &event)
 {
   auto requestedFood = *dynamic_cast<EventT<FoodResp> const &> (*event);
 
-  bool requestedFoodCollidedWithSnake = false;
-  for (auto const &segment : m_segments)
-    {
-      if (segment.x == requestedFood.x and segment.y == requestedFood.y)
-        {
-          requestedFoodCollidedWithSnake = true;
-          break;
-        }
-    }
+  bool requestedFoodCollidedWithSnake = isFoodCollideWithSnake(requestedFood);
 
   if (requestedFoodCollidedWithSnake)
     {
@@ -271,6 +263,19 @@ Controller::handleRequestedFood (std::unique_ptr<Event> &event)
     }
 
   m_foodPosition = std::make_pair (requestedFood.x, requestedFood.y);
+}
+
+bool Controller::isFoodCollideWithSnake(FoodResp& requestedFood)
+{
+    for (auto const &segment : m_segments)
+    {
+      if (segment.x == requestedFood.x and segment.y == requestedFood.y)
+        {
+          return true;
+          break;
+        }
+    }
+    return false;
 }
 
 } // namespace Snake
