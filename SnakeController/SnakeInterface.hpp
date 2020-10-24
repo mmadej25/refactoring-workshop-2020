@@ -38,21 +38,17 @@ struct Coordinate{
     int y;
 };
 
-struct DisplayInd
+struct DisplayInd : Coordinate
 {
     static constexpr std::uint32_t MESSAGE_ID = 0x30;
 
-    int x;
-    int y;
     Cell value;
 };
 
-struct FoodInd
+struct FoodInd : Coordinate
 {
     static constexpr std::uint32_t MESSAGE_ID = 0x40;
 
-    int x;
-    int y;
 };
 
 struct FoodReq
@@ -64,8 +60,6 @@ struct FoodResp : Coordinate
 {
     static constexpr std::uint32_t MESSAGE_ID = 0x42;
 
-    //int x;
-    //int y;
 };
 
 struct ScoreInd

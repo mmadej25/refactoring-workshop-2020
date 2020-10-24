@@ -195,15 +195,7 @@ Controller::handleReciveFood (std::unique_ptr<Event> &event)
   try
     {
       auto receivedFood = *dynamic_cast<EventT<FoodInd> const &> (*event);
-      bool requestedFoodCollidedWithSnake = false;
-      for (auto const &segment : m_segments)
-        {
-          if (segment.x == receivedFood.x and segment.y == receivedFood.y)
-            {
-              requestedFoodCollidedWithSnake = true;
-              break;
-            }
-        }
+      bool requestedFoodCollidedWithSnake {isFoodCollideWithSnake(receivedFood)};
 
       if (requestedFoodCollidedWithSnake)
         {
@@ -254,12 +246,9 @@ Controller::handleRequestedFood (std::unique_ptr<Event> &event)
     }
   else
     {
-      DisplayInd placeNewFood;
-      placeNewFood.x = requestedFood.x;
-      placeNewFood.y = requestedFood.y;
-      placeNewFood.value = Cell_FOOD;
+      
       m_displayPort.send (
-          std::make_unique<EventT<DisplayInd> > (placeNewFood));
+          std::make_unique<EventT<DisplayInd> > (calculateDisplayInd(requestedFood)));
     }
 
   m_foodPosition = std::make_pair (requestedFood.x, requestedFood.y);
@@ -276,6 +265,15 @@ bool Controller::isFoodCollideWithSnake(Snake::Coordinate coordinate)
         }
     }
     return false;
+}
+
+DisplayInd Controller::calculateDisplayInd(Coordinate coordinate)
+{
+      DisplayInd placeNewFood;
+      placeNewFood.x = coordinate.x;
+      placeNewFood.y = coordinate.y;
+      placeNewFood.value = Cell_FOOD;
+      return placeNewFood;
 }
 
 } // namespace Snake
