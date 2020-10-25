@@ -86,16 +86,8 @@ void
 Controller::handleTimeEvent (std::unique_ptr<Event> &event)
 {
   auto const &timerEvent = *dynamic_cast<EventT<TimeoutInd> const &> (*event);
-  Segment const &currentHead = m_segments.front ();
 
-  Segment newHead;
-  newHead.x = currentHead.x + ((m_currentDirection & 0b01)
-                                   ? (m_currentDirection & 0b10) ? 1 : -1
-                                   : 0);
-  newHead.y = currentHead.y + (not(m_currentDirection & 0b01)
-                                   ? (m_currentDirection & 0b10) ? 1 : -1
-                                   : 0);
-  newHead.ttl = currentHead.ttl;
+  Segment newHead=calculateNewHead();
 
   bool lost = false;
 
@@ -139,8 +131,8 @@ Controller::updateScorePort (Segment &newHead, bool &lost)
         {
           if (not--segment.ttl)
             {
-              m_displayPort.send (
-                  std::make_unique<EventT<DisplayInd> > (calculateDisplayInd(Coordinate{segment.x,segment.y},Cell_FREE)));
+              m_displayPort.send (std::make_unique<EventT<DisplayInd> > (
+                  calculateDisplayInd (segment, Cell_FREE)));
             }
         }
     }
@@ -151,7 +143,8 @@ Controller::displayNewHead (Segment &newHead)
 {
   m_segments.push_front (newHead);
 
-  m_displayPort.send (std::make_unique<EventT<DisplayInd> > (calculateDisplayInd(Coordinate{newHead.x,newHead.y},Cell_SNAKE)));
+  m_displayPort.send (std::make_unique<EventT<DisplayInd> > (
+      calculateDisplayInd (newHead, Cell_SNAKE)));
 
   m_segments.erase (std::remove_if (m_segments.begin (), m_segments.end (),
                                     [](auto const &segment) {
@@ -169,7 +162,8 @@ Controller::handleDirectionChange (std::unique_ptr<Event> &event)
       auto direction
           = dynamic_cast<EventT<DirectionInd> const &> (*event)->direction;
 
-      if ((m_currentDirection & 0b01) != (direction & 0b01))
+      if ((m_currentDirection & Direction_LEFT)
+          != (direction & Direction_LEFT))
         {
           m_currentDirection = direction;
         }
@@ -186,7 +180,8 @@ Controller::handleReciveFood (std::unique_ptr<Event> &event)
   try
     {
       auto receivedFood = *dynamic_cast<EventT<FoodInd> const &> (*event);
-      bool requestedFoodCollidedWithSnake {isFoodCollideWithSnake(receivedFood)};
+      bool requestedFoodCollidedWithSnake{ isFoodCollideWithSnake (
+          receivedFood) };
 
       if (requestedFoodCollidedWithSnake)
         {
@@ -195,10 +190,12 @@ Controller::handleReciveFood (std::unique_ptr<Event> &event)
       else
         {
           m_displayPort.send (
-              std::make_unique<EventT<DisplayInd> > (calculateDisplayInd(Coordinate{m_foodPosition.first,m_foodPosition.second},Cell_FREE)));
+              std::make_unique<EventT<DisplayInd> > (calculateDisplayInd (
+                  Coordinate{ m_foodPosition.first, m_foodPosition.second },
+                  Cell_FREE)));
 
-          m_displayPort.send (
-              std::make_unique<EventT<DisplayInd> > (calculateDisplayInd(receivedFood,Cell_FOOD)));
+          m_displayPort.send (std::make_unique<EventT<DisplayInd> > (
+              calculateDisplayInd (receivedFood, Cell_FOOD)));
         }
 
       m_foodPosition = std::make_pair (receivedFood.x, receivedFood.y);
@@ -221,7 +218,8 @@ Controller::handleRequestedFood (std::unique_ptr<Event> &event)
 {
   auto requestedFood = *dynamic_cast<EventT<FoodResp> const &> (*event);
 
-  bool requestedFoodCollidedWithSnake {isFoodCollideWithSnake(requestedFood)};
+  bool requestedFoodCollidedWithSnake{ isFoodCollideWithSnake (
+      requestedFood) };
 
   if (requestedFoodCollidedWithSnake)
     {
@@ -229,17 +227,18 @@ Controller::handleRequestedFood (std::unique_ptr<Event> &event)
     }
   else
     {
-      
-      m_displayPort.send (
-          std::make_unique<EventT<DisplayInd> > (calculateDisplayInd(requestedFood,Cell_FOOD)));
+
+      m_displayPort.send (std::make_unique<EventT<DisplayInd> > (
+          calculateDisplayInd (requestedFood, Cell_FOOD)));
     }
 
   m_foodPosition = std::make_pair (requestedFood.x, requestedFood.y);
 }
 
-bool Controller::isFoodCollideWithSnake(Coordinate coordinate)
+bool
+Controller::isFoodCollideWithSnake (Coordinate coordinate)
 {
-    for (auto const &segment : m_segments)
+  for (auto const &segment : m_segments)
     {
       if (segment.x == coordinate.x and segment.y == coordinate.y)
         {
@@ -247,16 +246,34 @@ bool Controller::isFoodCollideWithSnake(Coordinate coordinate)
           break;
         }
     }
-    return false;
+  return false;
 }
 
-DisplayInd Controller::calculateDisplayInd(Coordinate coordinate,Cell cellCategory)
+DisplayInd
+Controller::calculateDisplayInd (Coordinate coordinate, Cell cellCategory)
 {
-      DisplayInd placeNewFood;
-      placeNewFood.x = coordinate.x;
-      placeNewFood.y = coordinate.y;
-      placeNewFood.value = cellCategory;
-      return placeNewFood;
+  DisplayInd placeNewFood;
+  placeNewFood.x = coordinate.x;
+  placeNewFood.y = coordinate.y;
+  placeNewFood.value = cellCategory;
+  return placeNewFood;
+}
+
+Segment
+Controller::calculateNewHead ()
+{
+  Segment const &currentHead = m_segments.front ();
+  Segment newHead;
+  newHead.x
+      = currentHead.x + ((m_currentDirection & Direction_LEFT)
+                             ? (m_currentDirection & Direction_DOWN) ? 1 : -1
+                             : 0);
+  newHead.y
+      = currentHead.y + (not(m_currentDirection & Direction_LEFT)
+                             ? (m_currentDirection & Direction_DOWN) ? 1 : -1
+                             : 0);
+  newHead.ttl = currentHead.ttl;
+  return newHead;
 }
 
 } // namespace Snake

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <utility>
 
 namespace Snake
 {
@@ -13,9 +14,9 @@ enum Direction
     Direction_RIGHT = 0b11
 };
 
-struct Coordinate{
-    int x;
-    int y;
+struct Coordinate {
+    int x ;
+    int y ;
 };
 
 struct Segment :Coordinate

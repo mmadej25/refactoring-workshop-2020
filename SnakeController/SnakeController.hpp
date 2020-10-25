@@ -1,4 +1,3 @@
-#include "SnakeInterface.hpp"
 #pragma once
 
 #include <list>
@@ -54,6 +53,7 @@ private:
     void handleDirectionChange(std::unique_ptr<Event> &event);
     bool isFoodCollideWithSnake(Coordinate coordinate);
     DisplayInd calculateDisplayInd(Coordinate coordinate,Cell cellCategory);
+    Segment calculateNewHead();
 };
 
 } // namespace Snake
