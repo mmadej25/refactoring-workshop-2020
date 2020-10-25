@@ -13,6 +13,16 @@ enum Direction
     Direction_RIGHT = 0b11
 };
 
+struct Coordinate{
+    int x;
+    int y;
+};
+
+struct Segment :Coordinate
+    {
+        int ttl;
+    };
+
 struct DirectionInd
 {
     static constexpr std::uint32_t MESSAGE_ID = 0x10;
@@ -31,11 +41,6 @@ enum Cell
     Cell_FREE,
     Cell_FOOD,
     Cell_SNAKE
-};
-
-struct Coordinate{
-    int x;
-    int y;
 };
 
 struct DisplayInd : Coordinate

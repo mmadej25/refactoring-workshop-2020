@@ -1,3 +1,4 @@
+#include "SnakeInterface.hpp"
 #pragma once
 
 #include <list>
@@ -33,12 +34,7 @@ public:
     void receive(std::unique_ptr<Event> e) override;
 
 private:
-    struct Segment
-    {
-        int x;
-        int y;
-        int ttl;
-    };
+    
 
     IPort& m_displayPort;
     IPort& m_foodPort;
@@ -49,6 +45,7 @@ private:
 
     Direction m_currentDirection;
     std::list<Segment> m_segments;
+    
     void displayNewHead(Segment& newHead);
     void updateScorePort(Segment& newHead, bool &lost);
     void handleTimeEvent(std::unique_ptr<Event> &event);
