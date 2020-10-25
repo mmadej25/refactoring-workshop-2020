@@ -55,7 +55,7 @@ private:
     void handleReciveFood(std::unique_ptr<Event> &event);
     void handleRequestedFood(std::unique_ptr<Event> &event);
     void handleDirectionChange(std::unique_ptr<Event> &event);
-    bool isFoodCollideWithSnake(Snake::Coordinate coordinate);
+    bool isFoodCollideWithSnake(Coordinate coordinate);
     DisplayInd calculateDisplayInd(Coordinate coordinate,Cell cellCategory);
 };
 

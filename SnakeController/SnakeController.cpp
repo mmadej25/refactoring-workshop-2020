@@ -139,13 +139,8 @@ Controller::updateScorePort (Segment &newHead, bool &lost)
         {
           if (not--segment.ttl)
             {
-              DisplayInd l_evt;
-              l_evt.x = segment.x;
-              l_evt.y = segment.y;
-              l_evt.value = Cell_FREE;
-
               m_displayPort.send (
-                  std::make_unique<EventT<DisplayInd> > (l_evt));
+                  std::make_unique<EventT<DisplayInd> > (calculateDisplayInd(Coordinate{segment.x,segment.y},Cell_FREE)));
             }
         }
     }
@@ -155,12 +150,8 @@ void
 Controller::displayNewHead (Segment &newHead)
 {
   m_segments.push_front (newHead);
-  DisplayInd placeNewHead;
-  placeNewHead.x = newHead.x;
-  placeNewHead.y = newHead.y;
-  placeNewHead.value = Cell_SNAKE;
 
-  m_displayPort.send (std::make_unique<EventT<DisplayInd> > (placeNewHead));
+  m_displayPort.send (std::make_unique<EventT<DisplayInd> > (calculateDisplayInd(Coordinate{newHead.x,newHead.y},Cell_SNAKE)));
 
   m_segments.erase (std::remove_if (m_segments.begin (), m_segments.end (),
                                     [](auto const &segment) {
@@ -203,12 +194,8 @@ Controller::handleReciveFood (std::unique_ptr<Event> &event)
         }
       else
         {
-          DisplayInd clearOldFood;
-          clearOldFood.x = m_foodPosition.first;
-          clearOldFood.y = m_foodPosition.second;
-          clearOldFood.value = Cell_FREE;
           m_displayPort.send (
-              std::make_unique<EventT<DisplayInd> > (clearOldFood));
+              std::make_unique<EventT<DisplayInd> > (calculateDisplayInd(Coordinate{m_foodPosition.first,m_foodPosition.second},Cell_FREE)));
 
           m_displayPort.send (
               std::make_unique<EventT<DisplayInd> > (calculateDisplayInd(receivedFood,Cell_FOOD)));
@@ -250,7 +237,7 @@ Controller::handleRequestedFood (std::unique_ptr<Event> &event)
   m_foodPosition = std::make_pair (requestedFood.x, requestedFood.y);
 }
 
-bool Controller::isFoodCollideWithSnake(Snake::Coordinate coordinate)
+bool Controller::isFoodCollideWithSnake(Coordinate coordinate)
 {
     for (auto const &segment : m_segments)
     {
