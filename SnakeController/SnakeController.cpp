@@ -210,12 +210,8 @@ Controller::handleReciveFood (std::unique_ptr<Event> &event)
           m_displayPort.send (
               std::make_unique<EventT<DisplayInd> > (clearOldFood));
 
-          DisplayInd placeNewFood;
-          placeNewFood.x = receivedFood.x;
-          placeNewFood.y = receivedFood.y;
-          placeNewFood.value = Cell_FOOD;
           m_displayPort.send (
-              std::make_unique<EventT<DisplayInd> > (placeNewFood));
+              std::make_unique<EventT<DisplayInd> > (calculateDisplayInd(receivedFood,Cell_FOOD)));
         }
 
       m_foodPosition = std::make_pair (receivedFood.x, receivedFood.y);
@@ -248,7 +244,7 @@ Controller::handleRequestedFood (std::unique_ptr<Event> &event)
     {
       
       m_displayPort.send (
-          std::make_unique<EventT<DisplayInd> > (calculateDisplayInd(requestedFood)));
+          std::make_unique<EventT<DisplayInd> > (calculateDisplayInd(requestedFood,Cell_FOOD)));
     }
 
   m_foodPosition = std::make_pair (requestedFood.x, requestedFood.y);
@@ -267,12 +263,12 @@ bool Controller::isFoodCollideWithSnake(Snake::Coordinate coordinate)
     return false;
 }
 
-DisplayInd Controller::calculateDisplayInd(Coordinate coordinate)
+DisplayInd Controller::calculateDisplayInd(Coordinate coordinate,Cell cellCategory)
 {
       DisplayInd placeNewFood;
       placeNewFood.x = coordinate.x;
       placeNewFood.y = coordinate.y;
-      placeNewFood.value = Cell_FOOD;
+      placeNewFood.value = cellCategory;
       return placeNewFood;
 }
 
