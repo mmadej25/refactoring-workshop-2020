@@ -78,4 +78,6 @@ struct LooseInd
     static constexpr std::uint32_t MESSAGE_ID = 0x71;
 };
 
+bool operator==(const Segment& segment, const Coordinate& coordinate);
+
 } // namespace Snake

@@ -32,7 +32,7 @@ Controller::Controller (IPort &p_displayPort, IPort &p_foodPort,
   if (w == 'W' and f == 'F' and s == 'S')
     {
       m_mapDimension = std::make_pair (width, height);
-      m_foodPosition = std::make_pair (foodX, foodY);
+      m_foodPosition = {foodX, foodY};
 
       istr >> d;
       switch (d)
@@ -93,7 +93,7 @@ Controller::handleTimeEvent (std::unique_ptr<Event> &event)
 
   for (auto segment : m_segments)
     {
-      if (segment.x == newHead.x and segment.y == newHead.y)
+      if (segment ==newHead)
         {
           m_scorePort.send (std::make_unique<EventT<LooseInd> > ());
           lost = true;
@@ -114,7 +114,7 @@ Controller::handleTimeEvent (std::unique_ptr<Event> &event)
 void
 Controller::updateScorePort (Segment &newHead, bool &lost)
 {
-  if (std::make_pair (newHead.x, newHead.y) == m_foodPosition)
+  if (newHead== m_foodPosition)
     {
       m_scorePort.send (std::make_unique<EventT<ScoreInd> > ());
       m_foodPort.send (std::make_unique<EventT<FoodReq> > ());
@@ -190,15 +190,13 @@ Controller::handleReciveFood (std::unique_ptr<Event> &event)
       else
         {
           m_displayPort.send (
-              std::make_unique<EventT<DisplayInd> > (calculateDisplayInd (
-                  Coordinate{ m_foodPosition.first, m_foodPosition.second },
-                  Cell_FREE)));
+              std::make_unique<EventT<DisplayInd> > (calculateDisplayInd (m_foodPosition,Cell_FREE)));
 
           m_displayPort.send (std::make_unique<EventT<DisplayInd> > (
               calculateDisplayInd (receivedFood, Cell_FOOD)));
         }
 
-      m_foodPosition = std::make_pair (receivedFood.x, receivedFood.y);
+      m_foodPosition = receivedFood;
     }
   catch (std::bad_cast &)
     {
@@ -232,15 +230,15 @@ Controller::handleRequestedFood (std::unique_ptr<Event> &event)
           calculateDisplayInd (requestedFood, Cell_FOOD)));
     }
 
-  m_foodPosition = std::make_pair (requestedFood.x, requestedFood.y);
+  m_foodPosition = requestedFood;
 }
 
 bool
-Controller::isFoodCollideWithSnake (Coordinate coordinate)
+Controller::isFoodCollideWithSnake (Coordinate foodCoordinates)
 {
   for (auto const &segment : m_segments)
     {
-      if (segment.x == coordinate.x and segment.y == coordinate.y)
+      if (segment ==foodCoordinates)
         {
           return true;
           break;
@@ -274,6 +272,11 @@ Controller::calculateNewHead ()
                              : 0);
   newHead.ttl = currentHead.ttl;
   return newHead;
+}
+
+bool operator==(const Segment& segment, const Coordinate& coordinate)
+{
+    return ((segment.x==coordinate.x)and (segment.y==coordinate.y));
 }
 
 } // namespace Snake

@@ -10,6 +10,9 @@
 class Event;
 class IPort;
 
+using MapDimension =std::pair<int,int>;
+
+
 namespace Snake
 {
 struct ConfigurationError : std::logic_error
@@ -39,8 +42,8 @@ private:
     IPort& m_foodPort;
     IPort& m_scorePort;
 
-    std::pair<int, int> m_mapDimension;
-    std::pair<int, int> m_foodPosition;
+    MapDimension m_mapDimension;
+    Coordinate m_foodPosition;
 
     Direction m_currentDirection;
     std::list<Segment> m_segments;
@@ -51,7 +54,7 @@ private:
     void handleReciveFood(std::unique_ptr<Event> &event);
     void handleRequestedFood(std::unique_ptr<Event> &event);
     void handleDirectionChange(std::unique_ptr<Event> &event);
-    bool isFoodCollideWithSnake(Coordinate coordinate);
+    bool isFoodCollideWithSnake(Coordinate foodCoordinate);
     DisplayInd calculateDisplayInd(Coordinate coordinate,Cell cellCategory);
     Segment calculateNewHead();
 };
