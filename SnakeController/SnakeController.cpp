@@ -90,16 +90,13 @@ Controller::handleTimeEvent (std::unique_ptr<Event> &event)
   Segment newHead=calculateNewHead();
 
   bool lost = false;
-
-  for (auto segment : m_segments)
-    {
-      if (segment ==newHead)
-        {
-          m_scorePort.send (std::make_unique<EventT<LooseInd> > ());
-          lost = true;
-          break;
-        }
-    }
+    
+  auto collision=std::find(m_segments.begin(),m_segments.end(),newHead);
+  if(collision!=m_segments.end())
+  {
+      m_scorePort.send (std::make_unique<EventT<LooseInd> > ());
+      lost = true;
+  }
 
   if (not lost)
     {
@@ -233,12 +230,11 @@ Controller::handleRequestedFood (std::unique_ptr<Event> &event)
   m_foodPosition = requestedFood;
 }
 
-bool
-Controller::isFoodCollideWithSnake (Coordinate foodCoordinates)
+bool Controller::isFoodCollideWithSnake(Coordinate foodCoordinate)
 {
   for (auto const &segment : m_segments)
     {
-      if (segment ==foodCoordinates)
+      if (segment ==foodCoordinate)
         {
           return true;
           break;
@@ -263,12 +259,12 @@ Controller::calculateNewHead ()
   Segment const &currentHead = m_segments.front ();
   Segment newHead;
   newHead.x
-      = currentHead.x + ((m_currentDirection & Direction_LEFT)
-                             ? (m_currentDirection & Direction_DOWN) ? 1 : -1
+      = currentHead.x + ((m_currentDirection bitand Direction_LEFT)
+                             ? (m_currentDirection bitand Direction_DOWN) ? 1 : -1
                              : 0);
   newHead.y
-      = currentHead.y + (not(m_currentDirection & Direction_LEFT)
-                             ? (m_currentDirection & Direction_DOWN) ? 1 : -1
+      = currentHead.y + (not(m_currentDirection bitand Direction_LEFT)
+                             ? (m_currentDirection bitand Direction_DOWN) ? 1 : -1
                              : 0);
   newHead.ttl = currentHead.ttl;
   return newHead;

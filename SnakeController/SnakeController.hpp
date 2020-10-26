@@ -2,6 +2,7 @@
 
 #include <list>
 #include <memory>
+#include <algorithm>
 
 #include "IEventHandler.hpp"
 #include "SnakeInterface.hpp"
@@ -10,11 +11,12 @@
 class Event;
 class IPort;
 
-using MapDimension =std::pair<int,int>;
-
 
 namespace Snake
 {
+using MapDimension =std::pair<int,int>;
+using Segments=std::list<Segment> ;
+
 struct ConfigurationError : std::logic_error
 {
     ConfigurationError();
@@ -46,7 +48,7 @@ private:
     Coordinate m_foodPosition;
 
     Direction m_currentDirection;
-    std::list<Segment> m_segments;
+    Segments m_segments;
     
     void displayNewHead(Segment& newHead);
     void updateScorePort(Segment& newHead, bool &lost);
