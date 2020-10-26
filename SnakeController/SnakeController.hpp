@@ -59,6 +59,8 @@ private:
     bool isFoodCollideWithSnake(Coordinate foodCoordinate);
     DisplayInd calculateDisplayInd(Coordinate coordinate,Cell cellCategory);
     Segment calculateNewHead();
+    bool isCollision(Segment newSegment);
+    bool isOutOfMap(Segment newSegment);
 };
 
 } // namespace Snake

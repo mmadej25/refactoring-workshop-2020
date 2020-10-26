@@ -89,14 +89,11 @@ Controller::handleTimeEvent (std::unique_ptr<Event> &event)
 
   Segment newHead=calculateNewHead();
 
-  bool lost = false;
+  bool lost = isCollision(newHead);
     
-  auto collision=std::find(m_segments.begin(),m_segments.end(),newHead);
-  if(collision!=m_segments.end())
-  {
+  if(lost)
       m_scorePort.send (std::make_unique<EventT<LooseInd> > ());
-      lost = true;
-  }
+  
 
   if (not lost)
     {
@@ -116,22 +113,19 @@ Controller::updateScorePort (Segment &newHead, bool &lost)
       m_scorePort.send (std::make_unique<EventT<ScoreInd> > ());
       m_foodPort.send (std::make_unique<EventT<FoodReq> > ());
     }
-  else if (newHead.x < 0 or newHead.y < 0 or newHead.x >= m_mapDimension.first
-           or newHead.y >= m_mapDimension.second)
+  else if (isOutOfMap(newHead))
     {
       m_scorePort.send (std::make_unique<EventT<LooseInd> > ());
       lost = true;
     }
   else
     {
-      for (auto &segment : m_segments)
-        {
-          if (not--segment.ttl)
-            {
-              m_displayPort.send (std::make_unique<EventT<DisplayInd> > (
-                  calculateDisplayInd (segment, Cell_FREE)));
-            }
-        }
+      auto freeSegment=[this](Segment& segment)
+      {
+          if(not --segment.ttl)
+              m_displayPort.send (std::make_unique<EventT<DisplayInd> > (calculateDisplayInd (segment, Cell_FREE)));
+      };
+    std::for_each(m_segments.begin(),m_segments.end(),freeSegment);
     }
 }
 
@@ -268,6 +262,18 @@ Controller::calculateNewHead ()
                              : 0);
   newHead.ttl = currentHead.ttl;
   return newHead;
+}
+
+bool Controller::isCollision(Segment newSegment)
+{
+    auto collision=std::find(m_segments.begin(),m_segments.end(),newSegment);
+    return (collision!=m_segments.end());
+}
+
+bool Controller::isOutOfMap(Segment newSegment)
+{
+    return (newSegment.x < 0 or newSegment.y < 0 or newSegment.x >= m_mapDimension.first
+           or newSegment.y >= m_mapDimension.second);
 }
 
 bool operator==(const Segment& segment, const Coordinate& coordinate)
