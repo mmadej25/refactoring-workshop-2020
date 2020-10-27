@@ -32,7 +32,7 @@ Controller::Controller (IPort &p_displayPort, IPort &p_foodPort,
   if (w == 'W' and f == 'F' and s == 'S')
     {
       m_mapDimension = std::make_pair (width, height);
-      m_foodPosition = {foodX, foodY};
+      m_foodPosition = { foodX, foodY };
 
       istr >> d;
       switch (d)
@@ -87,53 +87,61 @@ Controller::handleTimeEvent (std::unique_ptr<Event> &event)
 {
   auto const &timerEvent = *dynamic_cast<EventT<TimeoutInd> const &> (*event);
 
-  Segment newHead=createNewHead();
+  Segment newHead = createNewHead ();
 
-  bool lost = isCollideWithSnake(newHead);
-    
-  if(lost)
-      m_scorePort.send (std::make_unique<EventT<LooseInd> > ());
-  
+  bool lostInd = isCollideWithSnake (newHead) or isOutOfMap (newHead);
 
-  if (not lost)
+  if (lostInd)
+    m_scorePort.send (std::make_unique<EventT<LooseInd> > ());
+  else
     {
-      updateScorePort (newHead, lost);
-    }
-  if (not lost)
-    {
-      displayNewHead (newHead);
+      eatOrMove (newHead);
+      updateSnake (newHead);
     }
 }
 
 void
-Controller::updateScorePort (Segment &newHead, bool &lost)
+Controller::eatOrMove (Segment &newHead)
 {
-  if (newHead== m_foodPosition)
+  if (isOnFood (newHead))
     {
       m_scorePort.send (std::make_unique<EventT<ScoreInd> > ());
       m_foodPort.send (std::make_unique<EventT<FoodReq> > ());
     }
-  else if (isOutOfMap(newHead))
-    {
-      m_scorePort.send (std::make_unique<EventT<LooseInd> > ());
-      lost = true;
-    }
   else
-      moveSnake();
+    moveSnake ();
 }
 
 void
-Controller::displayNewHead (Segment &newHead)
+Controller::moveSnake ()
+{
+  auto freeSegment = [this](Segment &segment) {
+    if (not--segment.ttl)
+      m_displayPort.send (std::make_unique<EventT<DisplayInd> > (
+          calculateDisplayInd (segment, Cell_FREE)));
+  };
+  std::for_each (m_segments.begin (), m_segments.end (), freeSegment);
+}
+
+void
+Controller::updateSnake (Segment &newHead)
 {
   m_segments.push_front (newHead);
 
-  m_displayPort.send (std::make_unique<EventT<DisplayInd> > (calculateDisplayInd (newHead, Cell_SNAKE)));
+  m_displayPort.send (std::make_unique<EventT<DisplayInd> > (
+      calculateDisplayInd (newHead, Cell_SNAKE)));
+  updateSegments ();
+}
 
-  m_segments.erase (std::remove_if (m_segments.begin (), m_segments.end (),
-                                    [](auto const &segment) {
-                                      return not(segment.ttl > 0);
-                                    }),
-                    m_segments.end ());
+void
+Controller::updateSegments ()
+{
+  auto lambda_remove
+      = [](auto const &segment) { return not(segment.ttl > 0); };
+
+  m_segments.erase (
+      std::remove_if (m_segments.begin (), m_segments.end (), lambda_remove),
+      m_segments.end ());
 }
 
 void
@@ -163,7 +171,8 @@ Controller::handleReciveFood (std::unique_ptr<Event> &event)
   try
     {
       auto receivedFood = *dynamic_cast<EventT<FoodInd> const &> (*event);
-      bool requestedFoodCollidedWithSnake{ isFoodCollideWithSnake (receivedFood) };
+      bool requestedFoodCollidedWithSnake{ isFoodCollideWithSnake (
+          receivedFood) };
 
       if (requestedFoodCollidedWithSnake)
         {
@@ -171,8 +180,8 @@ Controller::handleReciveFood (std::unique_ptr<Event> &event)
         }
       else
         {
-          m_displayPort.send (
-              std::make_unique<EventT<DisplayInd> > (calculateDisplayInd (m_foodPosition,Cell_FREE)));
+          m_displayPort.send (std::make_unique<EventT<DisplayInd> > (
+              calculateDisplayInd (m_foodPosition, Cell_FREE)));
 
           m_displayPort.send (std::make_unique<EventT<DisplayInd> > (
               calculateDisplayInd (receivedFood, Cell_FOOD)));
@@ -215,11 +224,12 @@ Controller::handleRequestedFood (std::unique_ptr<Event> &event)
   m_foodPosition = requestedFood;
 }
 
-bool Controller::isFoodCollideWithSnake(Coordinate foodCoordinate)
+bool
+Controller::isFoodCollideWithSnake (Coordinate foodCoordinate)
 {
   for (auto const &segment : m_segments)
     {
-      if (segment ==foodCoordinate)
+      if (segment == foodCoordinate)
         {
           return true;
           break;
@@ -243,43 +253,44 @@ Controller::createNewHead ()
 {
   Segment const &currentHead = m_segments.front ();
   Segment newHead;
-  newHead.x
-      = currentHead.x + ((m_currentDirection bitand Direction_LEFT)
-                             ? (m_currentDirection bitand Direction_DOWN) ? 1 : -1
-                             : 0);
-  newHead.y
-      = currentHead.y + (not(m_currentDirection bitand Direction_LEFT)
-                             ? (m_currentDirection bitand Direction_DOWN) ? 1 : -1
-                             : 0);
+  newHead.x = currentHead.x
+              + ((m_currentDirection bitand Direction_LEFT)
+                     ? (m_currentDirection bitand Direction_DOWN) ? 1 : -1
+                     : 0);
+  newHead.y = currentHead.y
+              + (not(m_currentDirection bitand Direction_LEFT)
+                     ? (m_currentDirection bitand Direction_DOWN) ? 1 : -1
+                     : 0);
   newHead.ttl = currentHead.ttl;
   return newHead;
 }
 
-bool Controller::isCollideWithSnake(Segment newSegment)
+bool
+Controller::isCollideWithSnake (Segment newSegment)
 {
-    auto collision=std::find(m_segments.begin(),m_segments.end(),newSegment);
-    return (collision!=m_segments.end());
+  auto collision
+      = std::find (m_segments.begin (), m_segments.end (), newSegment);
+  return (collision != m_segments.end ());
 }
 
-bool Controller::isOutOfMap(Segment newSegment)
+bool
+Controller::isOutOfMap (Segment newSegment)
 {
-    return (newSegment.x < 0 or newSegment.y < 0 or newSegment.x >= m_mapDimension.first
-           or newSegment.y >= m_mapDimension.second);
+  return (newSegment.x < 0 or newSegment.y < 0
+          or newSegment.x >= m_mapDimension.first
+          or newSegment.y >= m_mapDimension.second);
 }
 
-bool operator==(const Segment& segment, const Coordinate& coordinate)
+bool
+Controller::isOnFood (Segment &newHead)
 {
-    return ((segment.x==coordinate.x)and (segment.y==coordinate.y));
+  return newHead == m_foodPosition;
 }
 
-void Controller::moveSnake()
+bool
+operator== (const Segment &segment, const Coordinate &coordinate)
 {
-    auto freeSegment=[this](Segment& segment)
-      {
-          if(not --segment.ttl)
-              m_displayPort.send (std::make_unique<EventT<DisplayInd> > (calculateDisplayInd (segment, Cell_FREE)));
-      };
-    std::for_each(m_segments.begin(),m_segments.end(),freeSegment);
+  return ((segment.x == coordinate.x) and (segment.y == coordinate.y));
 }
 
 } // namespace Snake

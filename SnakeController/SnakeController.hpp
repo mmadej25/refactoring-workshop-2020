@@ -50,8 +50,8 @@ private:
     Direction m_currentDirection;
     Segments m_segments;
     
-    void displayNewHead(Segment& newHead);
-    void updateScorePort(Segment& newHead, bool &lost);
+    void updateSnake(Segment& newHead);
+    void eatOrMove(Segment& newHead);
     void handleTimeEvent(std::unique_ptr<Event> &event);
     void handleReciveFood(std::unique_ptr<Event> &event);
     void handleRequestedFood(std::unique_ptr<Event> &event);
@@ -61,7 +61,9 @@ private:
     Segment createNewHead();
     bool isCollideWithSnake(Segment newSegment);
     bool isOutOfMap(Segment newSegment);
+    bool isOnFood(Segment& newHead);
     void moveSnake();
+    void updateSegments();
 };
 
 } // namespace Snake
