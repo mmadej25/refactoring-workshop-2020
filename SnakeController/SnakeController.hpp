@@ -58,9 +58,10 @@ private:
     void handleDirectionChange(std::unique_ptr<Event> &event);
     bool isFoodCollideWithSnake(Coordinate foodCoordinate);
     DisplayInd calculateDisplayInd(Coordinate coordinate,Cell cellCategory);
-    Segment calculateNewHead();
-    bool isCollision(Segment newSegment);
+    Segment createNewHead();
+    bool isCollideWithSnake(Segment newSegment);
     bool isOutOfMap(Segment newSegment);
+    void moveSnake();
 };
 
 } // namespace Snake

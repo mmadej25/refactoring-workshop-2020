@@ -87,9 +87,9 @@ Controller::handleTimeEvent (std::unique_ptr<Event> &event)
 {
   auto const &timerEvent = *dynamic_cast<EventT<TimeoutInd> const &> (*event);
 
-  Segment newHead=calculateNewHead();
+  Segment newHead=createNewHead();
 
-  bool lost = isCollision(newHead);
+  bool lost = isCollideWithSnake(newHead);
     
   if(lost)
       m_scorePort.send (std::make_unique<EventT<LooseInd> > ());
@@ -119,14 +119,7 @@ Controller::updateScorePort (Segment &newHead, bool &lost)
       lost = true;
     }
   else
-    {
-      auto freeSegment=[this](Segment& segment)
-      {
-          if(not --segment.ttl)
-              m_displayPort.send (std::make_unique<EventT<DisplayInd> > (calculateDisplayInd (segment, Cell_FREE)));
-      };
-    std::for_each(m_segments.begin(),m_segments.end(),freeSegment);
-    }
+      moveSnake();
 }
 
 void
@@ -134,8 +127,7 @@ Controller::displayNewHead (Segment &newHead)
 {
   m_segments.push_front (newHead);
 
-  m_displayPort.send (std::make_unique<EventT<DisplayInd> > (
-      calculateDisplayInd (newHead, Cell_SNAKE)));
+  m_displayPort.send (std::make_unique<EventT<DisplayInd> > (calculateDisplayInd (newHead, Cell_SNAKE)));
 
   m_segments.erase (std::remove_if (m_segments.begin (), m_segments.end (),
                                     [](auto const &segment) {
@@ -171,8 +163,7 @@ Controller::handleReciveFood (std::unique_ptr<Event> &event)
   try
     {
       auto receivedFood = *dynamic_cast<EventT<FoodInd> const &> (*event);
-      bool requestedFoodCollidedWithSnake{ isFoodCollideWithSnake (
-          receivedFood) };
+      bool requestedFoodCollidedWithSnake{ isFoodCollideWithSnake (receivedFood) };
 
       if (requestedFoodCollidedWithSnake)
         {
@@ -248,7 +239,7 @@ Controller::calculateDisplayInd (Coordinate coordinate, Cell cellCategory)
 }
 
 Segment
-Controller::calculateNewHead ()
+Controller::createNewHead ()
 {
   Segment const &currentHead = m_segments.front ();
   Segment newHead;
@@ -264,7 +255,7 @@ Controller::calculateNewHead ()
   return newHead;
 }
 
-bool Controller::isCollision(Segment newSegment)
+bool Controller::isCollideWithSnake(Segment newSegment)
 {
     auto collision=std::find(m_segments.begin(),m_segments.end(),newSegment);
     return (collision!=m_segments.end());
@@ -279,6 +270,16 @@ bool Controller::isOutOfMap(Segment newSegment)
 bool operator==(const Segment& segment, const Coordinate& coordinate)
 {
     return ((segment.x==coordinate.x)and (segment.y==coordinate.y));
+}
+
+void Controller::moveSnake()
+{
+    auto freeSegment=[this](Segment& segment)
+      {
+          if(not --segment.ttl)
+              m_displayPort.send (std::make_unique<EventT<DisplayInd> > (calculateDisplayInd (segment, Cell_FREE)));
+      };
+    std::for_each(m_segments.begin(),m_segments.end(),freeSegment);
 }
 
 } // namespace Snake
