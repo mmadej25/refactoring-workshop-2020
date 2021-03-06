@@ -1,6 +1,6 @@
 #include "SnakeController.hpp"
 
-//#include "EventT.hpp"
+#include "EventT.hpp"
 
 #include <gtest/gtest.h>
 
